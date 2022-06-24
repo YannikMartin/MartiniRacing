@@ -1,0 +1,4 @@
+<launch>
+  <node name="MartiniRacing"          pkg="MartiniRacing"  type="rplidarNode" output="screen">
+  </node>
+</launch>
