@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+
+<launch>
+
+  	<!-- Robot pose -->
+  	<arg name="x" default="0"/>
+	<arg name="y" default="0"/>
+	<arg name="z" default="0"/>
+	<arg name="roll" default="0"/>
+	<arg name="pitch" default="0"/>
+	<arg name="yaw" default="0"/>
+	
+	<!-- launching slam stuff -->
+	
+	<arg name="geotiff_map_file_path" default="$(find hector_geotiff)/maps"/>
+
+  	<param name="/use_sim_time" value="false"/>
+
+  	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find hector_slam_launch)/rviz_cfg/mapping_demo.rviz"/>
+
+  	<include file="$(find hector_mapping)/launch/mapping_default.launch"/>
+
+  	<include file="$(find hector_geotiff_launch)/launch/geotiff_mapper.launch">
+    		<arg name="trajectory_source_frame_name" value="scanmatcher_frame"/>
+    		<arg name="map_file_path" value="$(arg geotiff_map_file_path)"/>
+  	</include>
+  	
+  	<!-- launching imu support-->
+  	
+  	<node pkg="hector_imu_tools" type="pose_and_orientation_to_imu_node" name="pose_and_orientation_to_imu_node" output="screen">
+    		<remap from="/imu" to="/imu_quat" />
+    		<remap from="/fused_imu" to="/imu_in" />
+    		<remap from="/pose" to="/slam_out_pose" />
+    	<!--<remap from="/state" to="/state_imu" />-->
+  	</node>
+  	
+  	 <!-- send urdf to param server -->
+  	<param name="robot_description" command="$(find xacro)/xacro --inorder '$(find trixy)/urdf/trixy.xacro'" />
+
+ 	<!-- Send fake joint values-->
+  	<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+    		<param name="use_gui" value="false"/>
+  	</node>
+
+  	<!-- Send robot states to tf -->
+  	<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false" output="screen"/>
+  	
+  	<param name="/use_sim_time" value="false"/>
+
+	<!--- Run AMCL --> 
+    	<include file="$(find amcl)/examples/amcl_omni.launch" />
+    
+    <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+    <rosparam file="$(find MartiniRacing_2dnav)/costmap_common_params.yaml" command="load" ns="global_costmap" /> 
+    <rosparam file="$(find MartiniRacing_2dnav)/costmap_common_params.yaml" command="load" ns="local_costmap" />
+    <rosparam file="$(find MartiniRacing_2dnav)/local_costmap_params.yaml" command="load" />
+    <rosparam file="$(find MartiniRacing_2dnav)/global_costmap_params.yaml" command="load" /> 
+    <rosparam file="$(find MartiniRacing_2dnav)/base_local_planner_params.yaml" command="load" />
+ </node>
+
+  
+ 
+  
+  
+  
+  
+</launch>
